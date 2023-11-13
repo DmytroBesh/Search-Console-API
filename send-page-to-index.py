@@ -4,6 +4,8 @@ from googleapiclient.discovery import build
 from google.oauth2 import service_account
 import csv
 
+#https://console.cloud.google.com/apis/api/indexing.googleapis.com/metrics?project=search-console-354907
+
 # Setting up your domain
 YOUR_DOMAIN = 'fondy.ua'
 
@@ -14,7 +16,7 @@ FILE_PATH = r'C:\Users\named\Розробка\Search Console API'
 SERVICE_ACCOUNT_FILE = os.path.join(FILE_PATH, 'client_secret.json')
 
 # Path to the .csv file to record the results
-CSV_FILE_PATH = os.path.join(FILE_PATH, f'submission_results-{YOUR_DOMAIN}.csv')
+CSV_FILE_PATH = os.path.join(FILE_PATH, f'Projects/submission_results-{YOUR_DOMAIN}.csv')
 
 # Creating credentials for Google API
 credentials = service_account.Credentials.from_service_account_file(
@@ -26,11 +28,12 @@ credentials = service_account.Credentials.from_service_account_file(
 service = build('indexing', 'v3', credentials=credentials)
 
 # Reading the URL from a file
-with open(os.path.join(FILE_PATH, f'{YOUR_DOMAIN}_non_indexed_urls.txt'), 'r') as file:
-    urls_to_index = [url.strip() for url in file.readlines()]
+url_file_path = os.path.join(FILE_PATH, f'Projects/non_indexed_urls_{YOUR_DOMAIN}.txt')
+with open(url_file_path, 'r') as file:
+    all_urls = [url.strip() for url in file.readlines()]
 
 # Limit the number of URLs to 200
-urls_to_index = urls_to_index[:200]
+urls_to_index = all_urls[:200] 
 
 # Function for sending URLs for indexing
 def submit_url(url):
@@ -38,6 +41,9 @@ def submit_url(url):
     body = {'url': url, 'type': 'URL_UPDATED'}
     response = service.urlNotifications().publish(body=body).execute()
     return response
+
+# List to keep track of successfully indexed URLs
+successfully_indexed = []
 
 # Open the .csv file to record the results
 with open(CSV_FILE_PATH, mode='a', newline='', encoding='utf-8') as file:
@@ -50,13 +56,25 @@ with open(CSV_FILE_PATH, mode='a', newline='', encoding='utf-8') as file:
     # We send the URL for indexing with a delay of 1 second between requests
     for url in urls_to_index:
         try:
-            full_url = f'https://{YOUR_DOMAIN}/{url}'
+            if YOUR_DOMAIN not in url:
+                full_url = f'https://{YOUR_DOMAIN}/{url}'
+            else:
+                full_url = url
             response = submit_url(full_url)
             print(f'Submitted {url}: {response}')
             writer.writerow([full_url, 'Submitted', response])
+            # Assuming that if 'urlNotificationMetadata' in response, the URL is considered successfully indexed
+            if 'urlNotificationMetadata' in response:
+                successfully_indexed.append(url)
         except Exception as e:
             print(f'Error submitting {url}: {e}')
-            writer.writerow([f'https://{YOUR_DOMAIN}/{url}', 'Error', str(e)])
+            writer.writerow([full_url, 'Error', str(e)])
         time.sleep(1)  # Delay between URL sends
 
-print(f'Total URLs submitted: {len(urls_to_index)}')
+# Rewrite the file excluding successfully indexed URLs
+with open(url_file_path, 'w') as file:
+    urls_to_keep = [url for url in all_urls if url not in urls_to_index]
+    for url in urls_to_keep:
+        file.write(url + '\n')
+
+print(f'Total URLs submitted: {len(successfully_indexed)}')
