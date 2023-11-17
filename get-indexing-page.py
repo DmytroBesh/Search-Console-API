@@ -84,10 +84,10 @@ for sitemap_url in sitemaps:
     all_site_urls.extend(fetch_all_urls_from_sitemap(sitemap_url))
 
 indexed_urls = fetch_indexed_urls(service, domain_name)
-non_indexed_urls = sorted(set(all_site_urls) - set(indexed_urls))  # Sorting URLs
+_indexed_urls = sorted(set(all_site_urls) - set(indexed_urls))  # Sorting URLs
 
-# Writing non-indexed URLs to a file
-non_indexed_file_path = os.path.join(FILE_PATH, f'{domain_name}_non_indexed_urls.txt')
+# Writing -indexed URLs to a file
+non_indexed_file_path = os.path.join(FILE_PATH, f'Projects/{domain_name}_non_indexed_urls.txt')
 with open(non_indexed_file_path, 'w') as file:
     for url in non_indexed_urls:
         file.write(url + '\n')
