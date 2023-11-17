@@ -28,7 +28,7 @@ credentials = service_account.Credentials.from_service_account_file(
 service = build('indexing', 'v3', credentials=credentials)
 
 # Reading the URL from a file
-url_file_path = os.path.join(FILE_PATH, f'Projects/non_indexed_urls_{YOUR_DOMAIN}.txt')
+url_file_path = os.path.join(FILE_PATH, f'Projects/{YOUR_DOMAIN}_non_indexed_urls.txt')
 with open(url_file_path, 'r') as file:
     all_urls = [url.strip() for url in file.readlines()]
 
